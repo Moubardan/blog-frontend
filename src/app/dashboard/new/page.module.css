@@ -1,0 +1,11 @@
+.main {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem;
+  width: 100%;
+}
+
+.title {
+  font-size: 1.75rem;
+  margin-bottom: 2rem;
+}
