@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import { ApiError, mapPostDetail, publicApiRequest } from "@/lib/api";
+import type { PostDTO } from "blog-shared-types";
 import { CommentSection } from "@/components/CommentSection";
 import styles from "./page.module.css";
 
@@ -13,10 +14,17 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { slug } = await params;
-    const post = await prisma.post.findUnique({
-        where: { slug },
-        select: { title: true, excerpt: true },
-    });
+    let post: PostDTO | null = null;
+
+    try {
+        post = await publicApiRequest<PostDTO>(`/posts/by-slug/${slug}`, {
+            next: { revalidate: 60 },
+        });
+    } catch (error) {
+        if (!(error instanceof ApiError) || error.status !== 404) {
+            throw error;
+        }
+    }
 
     if (!post) {
         return { title: "Article introuvable" };
@@ -35,16 +43,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ArticlePage({ params }: Props) {
     const { slug } = await params;
-    const post = await prisma.post.findUnique({
-        where: { slug, published: true },
-        include: {
-            author: { select: { id: true, name: true } },
-            comments: {
-                include: { author: { select: { id: true, name: true } } },
-                orderBy: { createdAt: "desc" },
-            },
-        },
-    });
+    let post: ReturnType<typeof mapPostDetail> extends infer T ? T : never;
+
+    try {
+        const response = await publicApiRequest<PostDTO>(`/posts/by-slug/${slug}`, {
+            next: { revalidate: 60 },
+        });
+        post = mapPostDetail(response);
+    } catch (error) {
+        if (error instanceof ApiError && error.status === 404) {
+            notFound();
+        }
+        throw error;
+    }
 
     if (!post) {
         notFound();

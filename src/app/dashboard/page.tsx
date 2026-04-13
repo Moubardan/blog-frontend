@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { authenticatedApiRequest, mapPostSummary } from "@/lib/api";
+import type { PostDTO } from "blog-shared-types";
 import { redirect } from "next/navigation";
 import { DeletePostButton } from "@/components/DeletePostButton";
 import styles from "./page.module.css";
@@ -16,17 +17,7 @@ export default async function DashboardPage() {
         redirect("/login");
     }
 
-    const posts = await prisma.post.findMany({
-        where: { authorId: session.user.id },
-        select: {
-            id: true,
-            title: true,
-            slug: true,
-            published: true,
-            createdAt: true,
-        },
-        orderBy: { createdAt: "desc" },
-    });
+    const posts = (await authenticatedApiRequest<PostDTO[]>("/posts/mine")).map(mapPostSummary);
 
     return (
         <main className={styles.main}>

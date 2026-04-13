@@ -16,6 +16,7 @@
         "@auth/prisma-adapter": "^2.7.0",
         "@prisma/client": "^6.4.0",
         "bcryptjs": "^2.4.3",
+        "blog-shared-types": "git+https://github.com/Moubardan/blog-shared-types.git",
         "next": "^14.2.0",
         "next-auth": "^5.0.0-beta.25",
         "react": "^18.3.0",

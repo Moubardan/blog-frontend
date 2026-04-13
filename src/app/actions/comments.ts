@@ -1,8 +1,9 @@
 "use server";
 
+import { ApiError, authenticatedApiRequest, publicApiRequest } from "@/lib/api";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import type { PostDTO } from "blog-shared-types";
 import { revalidatePath } from "next/cache";
 
 const commentSchema = z.object({
@@ -10,7 +11,7 @@ const commentSchema = z.object({
     .string()
     .min(1, "Le commentaire ne peut pas être vide")
     .max(1000, "Le commentaire est trop long (max 1000 caractères)"),
-  postId: z.string().cuid(),
+  postId: z.string().uuid(),
 });
 
 export type CommentActionResult = {
@@ -40,21 +41,25 @@ export async function addCommentAction(
     };
   }
 
-  const post = await prisma.post.findUnique({
-    where: { id: validation.data.postId },
-  });
+  let post: PostDTO;
+  try {
+    await authenticatedApiRequest(`/posts/${validation.data.postId}/comments`, {
+      method: "POST",
+      body: JSON.stringify({ content: validation.data.content }),
+    });
+    post = await publicApiRequest<PostDTO>(`/posts/${validation.data.postId}`);
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return {
+        success: false,
+        errors: {
+          post: [error.message],
+        },
+      };
+    }
 
-  if (!post) {
-    return { success: false, errors: { post: ["Article introuvable"] } };
+    throw error;
   }
-
-  await prisma.comment.create({
-    data: {
-      content: validation.data.content,
-      postId: validation.data.postId,
-      authorId: session.user.id,
-    },
-  });
 
   revalidatePath(`/articles/${post.slug}`);
   return { success: true };

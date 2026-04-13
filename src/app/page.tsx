@@ -1,22 +1,14 @@
-import { prisma } from "@/lib/prisma";
+import { mapPostSummary, publicApiRequest, type PublicPostsResponse } from "@/lib/api";
 import { PostCard } from "@/components/PostCard";
 import styles from "./page.module.css";
 
 export const revalidate = 60;
 
 export default async function HomePage() {
-    const posts = await prisma.post.findMany({
-        where: { published: true },
-        select: {
-            id: true,
-            title: true,
-            slug: true,
-            excerpt: true,
-            createdAt: true,
-            author: { select: { id: true, name: true } },
-        },
-        orderBy: { createdAt: "desc" },
+    const response = await publicApiRequest<PublicPostsResponse>("/posts?page=1&limit=10", {
+        next: { revalidate },
     });
+    const posts = response.data.map(mapPostSummary);
 
     return (
         <main className={styles.main}>

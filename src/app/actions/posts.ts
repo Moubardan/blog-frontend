@@ -1,8 +1,9 @@
 "use server";
 
+import { ApiError, authenticatedApiRequest } from "@/lib/api";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import type { PostDTO } from "blog-shared-types";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -24,6 +25,20 @@ export type ActionResult = {
   data?: Record<string, unknown>;
   errors?: Record<string, string[]>;
 };
+
+function buildActionErrors(error: ApiError): Record<string, string[]> {
+  const errors: Record<string, string[]> = {};
+
+  if (error.message.toLowerCase().includes("slug")) {
+    errors.slug = [error.message];
+  } else if (error.status === 403) {
+    errors.auth = [error.message];
+  } else {
+    errors.post = [error.message];
+  }
+
+  return errors;
+}
 
 export async function createPostAction(
   _prevState: ActionResult | null,
@@ -50,23 +65,21 @@ export async function createPostAction(
     };
   }
 
-  const existing = await prisma.post.findUnique({
-    where: { slug: validation.data.slug },
-  });
+  try {
+    await authenticatedApiRequest<PostDTO>("/posts", {
+      method: "POST",
+      body: JSON.stringify(validation.data),
+    });
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return {
+        success: false,
+        errors: buildActionErrors(error),
+      };
+    }
 
-  if (existing) {
-    return {
-      success: false,
-      errors: { slug: ["Ce slug est déjà utilisé"] },
-    };
+    throw error;
   }
-
-  await prisma.post.create({
-    data: {
-      ...validation.data,
-      authorId: session.user.id,
-    },
-  });
 
   revalidatePath("/");
   redirect("/dashboard");
@@ -82,12 +95,20 @@ export async function updatePostAction(
     return { success: false, errors: { auth: ["Vous devez être connecté"] } };
   }
 
-  const post = await prisma.post.findUnique({ where: { id: postId } });
-  if (!post) {
-    return { success: false, errors: { post: ["Article introuvable"] } };
-  }
-  if (post.authorId !== session.user.id) {
-    return { success: false, errors: { auth: ["Vous n'êtes pas l'auteur de cet article"] } };
+  let currentPost: PostDTO;
+  try {
+    currentPost = await authenticatedApiRequest<PostDTO>(`/posts/mine/${postId}`);
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return {
+        success: false,
+        errors: {
+          post: [error.message],
+        },
+      };
+    }
+
+    throw error;
   }
 
   const raw = {
@@ -106,24 +127,27 @@ export async function updatePostAction(
     };
   }
 
-  if (validation.data.slug && validation.data.slug !== post.slug) {
-    const existing = await prisma.post.findUnique({
-      where: { slug: validation.data.slug },
+  let updatedPost: PostDTO;
+  try {
+    updatedPost = await authenticatedApiRequest<PostDTO>(`/posts/${postId}`, {
+      method: "PATCH",
+      body: JSON.stringify(validation.data),
     });
-    if (existing) {
-      return { success: false, errors: { slug: ["Ce slug est déjà utilisé"] } };
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return {
+        success: false,
+        errors: buildActionErrors(error),
+      };
     }
+
+    throw error;
   }
 
-  await prisma.post.update({
-    where: { id: postId },
-    data: validation.data,
-  });
-
   revalidatePath("/");
-  revalidatePath(`/articles/${post.slug}`);
-  if (validation.data.slug && validation.data.slug !== post.slug) {
-    revalidatePath(`/articles/${validation.data.slug}`);
+  revalidatePath(`/articles/${currentPost.slug}`);
+  if (updatedPost.slug !== currentPost.slug) {
+    revalidatePath(`/articles/${updatedPost.slug}`);
   }
   redirect("/dashboard");
 }
@@ -134,17 +158,24 @@ export async function deletePostAction(postId: string): Promise<ActionResult> {
     return { success: false, errors: { auth: ["Vous devez être connecté"] } };
   }
 
-  const post = await prisma.post.findUnique({ where: { id: postId } });
-  if (!post) {
-    return { success: false, errors: { post: ["Article introuvable"] } };
-  }
-  if (post.authorId !== session.user.id) {
-    return { success: false, errors: { auth: ["Vous n'êtes pas l'auteur de cet article"] } };
-  }
+  let currentPost: PostDTO;
+  try {
+    currentPost = await authenticatedApiRequest<PostDTO>(`/posts/mine/${postId}`);
+    await authenticatedApiRequest<{ message: string }>(`/posts/${postId}`, {
+      method: "DELETE",
+    });
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return {
+        success: false,
+        errors: buildActionErrors(error),
+      };
+    }
 
-  await prisma.post.delete({ where: { id: postId } });
+    throw error;
+  }
 
   revalidatePath("/");
-  revalidatePath(`/articles/${post.slug}`);
+  revalidatePath(`/articles/${currentPost.slug}`);
   return { success: true };
 }

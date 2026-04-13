@@ -1,9 +1,9 @@
 "use server";
 
+import { publicApiRequest, ApiError } from "@/lib/api";
 import { signIn as nextAuthSignIn } from "@/lib/auth";
+import type { AuthTokens } from "blog-shared-types";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
-import { hash } from "bcryptjs";
 
 const registerSchema = z.object({
   name: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
@@ -34,26 +34,29 @@ export async function registerAction(
     };
   }
 
-  const existing = await prisma.user.findUnique({
-    where: { email: validation.data.email },
-  });
+  try {
+    await publicApiRequest<AuthTokens>("/auth/register", {
+      method: "POST",
+      body: JSON.stringify(validation.data),
+    });
+  } catch (error) {
+    if (error instanceof ApiError) {
+      const message = error.message;
+      if (message.toLowerCase().includes("email")) {
+        return {
+          success: false,
+          errors: { email: [message] },
+        };
+      }
 
-  if (existing) {
-    return {
-      success: false,
-      errors: { email: ["Cet email est déjà utilisé"] },
-    };
+      return {
+        success: false,
+        errors: { auth: [message] },
+      };
+    }
+
+    throw error;
   }
-
-  const hashedPassword = await hash(validation.data.password, 10);
-
-  await prisma.user.create({
-    data: {
-      name: validation.data.name,
-      email: validation.data.email,
-      password: hashedPassword,
-    },
-  });
 
   return { success: true };
 }

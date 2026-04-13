@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { ApiError, authenticatedApiRequest } from "@/lib/api";
+import type { PostDTO } from "blog-shared-types";
 import { PostForm } from "@/components/PostForm";
 import styles from "@/app/dashboard/new/page.module.css";
 
@@ -21,31 +22,31 @@ export default async function EditPostPage({ params }: Props) {
 
     const { id } = await params;
 
-    const post = await prisma.post.findUnique({
-        where: { id },
-        select: {
-            id: true,
-            title: true,
-            content: true,
-            slug: true,
-            excerpt: true,
-            published: true,
-            authorId: true,
-        },
-    });
+    let post: PostDTO;
+
+    try {
+        post = await authenticatedApiRequest<PostDTO>(`/posts/mine/${id}`);
+    } catch (error) {
+        if (error instanceof ApiError && error.status === 404) {
+            notFound();
+        }
+        throw error;
+    }
 
     if (!post) {
         notFound();
     }
 
-    if (post.authorId !== session.user.id) {
-        redirect("/dashboard");
-    }
-
     return (
         <main className={styles.main}>
             <h1 className={styles.title}>Modifier l&apos;article</h1>
-            <PostForm post={post} />
+            <PostForm
+                post={{
+                    ...post,
+                    excerpt: post.excerpt ?? null,
+                    published: post.published ?? false,
+                }}
+            />
         </main>
     );
 }
