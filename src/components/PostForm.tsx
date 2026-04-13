@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useFormState, useFormStatus } from "react-dom";
 import Link from "next/link";
 import { createPostAction, updatePostAction, type ActionResult } from "@/app/actions/posts";
 import styles from "./PostForm.module.css";
@@ -14,6 +14,20 @@ interface PostFormProps {
         excerpt: string | null;
         published: boolean;
     };
+}
+
+function SubmitButton({ hasPost }: { hasPost: boolean }) {
+    const { pending } = useFormStatus();
+
+    return (
+        <button type="submit" disabled={pending} className={styles.submitBtn}>
+            {pending
+                ? "Enregistrement..."
+                : hasPost
+                    ? "Mettre à jour"
+                    : "Créer l'article"}
+        </button>
+    );
 }
 
 function slugify(text: string): string {
@@ -30,7 +44,7 @@ export function PostForm({ post }: PostFormProps) {
         ? updatePostAction.bind(null, post.id)
         : createPostAction;
 
-    const [state, formAction, isPending] = useActionState<ActionResult | null, FormData>(
+    const [state, formAction] = useFormState<ActionResult | null, FormData>(
         action,
         null
     );
@@ -137,13 +151,7 @@ export function PostForm({ post }: PostFormProps) {
             )}
 
             <div className={styles.actions}>
-                <button type="submit" disabled={isPending} className={styles.submitBtn}>
-                    {isPending
-                        ? "Enregistrement..."
-                        : post
-                            ? "Mettre à jour"
-                            : "Créer l'article"}
-                </button>
+                <SubmitButton hasPost={Boolean(post)} />
                 <Link href="/dashboard" className={styles.cancelLink}>
                     Annuler
                 </Link>

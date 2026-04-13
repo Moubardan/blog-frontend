@@ -1,31 +1,43 @@
 "use client";
 
 import { useState } from "react";
-import { useActionState } from "react";
+import { useFormState, useFormStatus } from "react-dom";
 import {
     credentialsSignIn,
     registerAction,
-    googleSignIn,
     type AuthActionResult,
 } from "@/app/actions/auth";
 import styles from "@/app/login/page.module.css";
 
+function SubmitButton({ mode }: { mode: "login" | "register" }) {
+    const { pending } = useFormStatus();
+
+    return (
+        <button type="submit" disabled={pending} className={styles.submitBtn}>
+            {pending
+                ? "Chargement..."
+                : mode === "login"
+                    ? "Se connecter"
+                    : "Créer un compte"}
+        </button>
+    );
+}
+
 export function LoginForm() {
     const [mode, setMode] = useState<"login" | "register">("login");
 
-    const [loginState, loginAction, loginPending] = useActionState<
+    const [loginState, loginAction] = useFormState<
         AuthActionResult | null,
         FormData
     >(credentialsSignIn, null);
 
-    const [registerState, registerAction_, registerPending] = useActionState<
+    const [registerState, registerAction_] = useFormState<
         AuthActionResult | null,
         FormData
     >(registerAction, null);
 
     const state = mode === "login" ? loginState : registerState;
     const action = mode === "login" ? loginAction : registerAction_;
-    const isPending = mode === "login" ? loginPending : registerPending;
 
     return (
         <>
@@ -92,21 +104,7 @@ export function LoginForm() {
                     </p>
                 )}
 
-                <button type="submit" disabled={isPending} className={styles.submitBtn}>
-                    {isPending
-                        ? "Chargement..."
-                        : mode === "login"
-                            ? "Se connecter"
-                            : "Créer un compte"}
-                </button>
-            </form>
-
-            <div className={styles.divider}>ou</div>
-
-            <form action={googleSignIn}>
-                <button type="submit" className={styles.googleBtn}>
-                    Continuer avec Google
-                </button>
+                <SubmitButton mode={mode} />
             </form>
 
             <p className={styles.toggle}>

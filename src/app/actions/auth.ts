@@ -79,7 +79,3 @@ export async function credentialsSignIn(
     };
   }
 }
-
-export async function googleSignIn() {
-  await nextAuthSignIn("google", { redirectTo: "/dashboard" });
-}

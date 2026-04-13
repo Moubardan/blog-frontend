@@ -5,18 +5,10 @@ import { prisma } from "@/lib/prisma";
 import { CommentSection } from "@/components/CommentSection";
 import styles from "./page.module.css";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 interface Props {
     params: Promise<{ slug: string }>;
-}
-
-export async function generateStaticParams() {
-    const posts = await prisma.post.findMany({
-        where: { published: true },
-        select: { slug: true },
-    });
-    return posts.map((post) => ({ slug: post.slug }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useFormState, useFormStatus } from "react-dom";
 import { addCommentAction, type CommentActionResult } from "@/app/actions/comments";
 import styles from "./CommentForm.module.css";
 
@@ -9,8 +9,18 @@ interface CommentFormProps {
     isAuthenticated: boolean;
 }
 
+function SubmitButton() {
+    const { pending } = useFormStatus();
+
+    return (
+        <button type="submit" disabled={pending} className={styles.submitBtn}>
+            {pending ? "Envoi..." : "Commenter"}
+        </button>
+    );
+}
+
 export function CommentForm({ postId, isAuthenticated }: CommentFormProps) {
-    const [state, formAction, isPending] = useActionState<CommentActionResult | null, FormData>(
+    const [state, formAction] = useFormState<CommentActionResult | null, FormData>(
         addCommentAction,
         null
     );
@@ -43,9 +53,7 @@ export function CommentForm({ postId, isAuthenticated }: CommentFormProps) {
             {state?.success && (
                 <p className={styles.success}>Commentaire ajouté !</p>
             )}
-            <button type="submit" disabled={isPending} className={styles.submitBtn}>
-                {isPending ? "Envoi..." : "Commenter"}
-            </button>
+            <SubmitButton />
         </form>
     );
 }
