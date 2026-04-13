@@ -1,6 +1,7 @@
 import "server-only";
 
 import { auth } from "@/lib/auth";
+import { getApiBaseUrl } from "@/lib/env";
 import { redirect } from "next/navigation";
 import type {
   ApiErrorResponse,
@@ -25,14 +26,6 @@ export class ApiError extends Error {
     super(message);
     this.name = "ApiError";
   }
-}
-
-function getApiBaseUrl() {
-  return (
-    process.env.API_URL ||
-    process.env.NEXT_PUBLIC_API_URL ||
-    "http://localhost:4000"
-  );
 }
 
 async function parseResponse<T>(response: Response): Promise<T> {

@@ -1,17 +1,10 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import type { JWT } from "next-auth/jwt";
+import { getApiBaseUrl } from "@/lib/env";
 import type { AuthTokens, UserDTO } from "blog-shared-types";
 
 const ACCESS_TOKEN_REFRESH_BUFFER_MS = 60 * 1000;
-
-function getApiBaseUrl() {
-  return (
-    process.env.API_URL ||
-    process.env.NEXT_PUBLIC_API_URL ||
-    "http://localhost:4000"
-  );
-}
 
 function decodeJwtExpiry(accessToken: string) {
   const payload = JSON.parse(
