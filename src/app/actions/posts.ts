@@ -116,7 +116,7 @@ export async function updatePostAction(
     content: formData.get("content") || undefined,
     slug: formData.get("slug") || undefined,
     excerpt: formData.get("excerpt") || undefined,
-    published: formData.has("published") ? formData.get("published") === "on" : undefined,
+    published: formData.get("published") === "on",
   };
 
   const validation = updatePostSchema.safeParse(raw);
