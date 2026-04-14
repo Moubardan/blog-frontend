@@ -16,6 +16,16 @@ export type AuthActionResult = {
   errors?: Record<string, string[]>;
 };
 
+function isNextRedirectError(error: unknown): error is { digest: string } {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "digest" in error &&
+    typeof (error as { digest: unknown }).digest === "string" &&
+    (error as { digest: string }).digest.startsWith("NEXT_REDIRECT")
+  );
+}
+
 export async function registerAction(
   _prevState: AuthActionResult | null,
   formData: FormData
@@ -73,7 +83,7 @@ export async function credentialsSignIn(
     });
     return { success: true };
   } catch (error) {
-    if (error instanceof Error && error.message === "NEXT_REDIRECT") {
+    if (isNextRedirectError(error)) {
       throw error;
     }
     return {

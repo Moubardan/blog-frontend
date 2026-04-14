@@ -1,6 +1,6 @@
 import "server-only";
 
-const LOCAL_API_FALLBACK = "http://localhost:4000";
+const LOCAL_API_FALLBACK = "http://127.0.0.1:4000";
 
 export function getApiBaseUrl() {
   const apiUrl = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL;

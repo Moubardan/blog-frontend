@@ -117,7 +117,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         request.nextUrl.pathname.startsWith("/profile");
 
       if (isProtectedRoute) {
-        return !!auth?.user && !!auth?.accessToken && !auth?.error;
+        return !!auth?.user;
       }
 
       return true;
