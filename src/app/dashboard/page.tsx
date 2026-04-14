@@ -15,6 +15,8 @@ export const metadata: Metadata = {
     title: "Dashboard",
 };
 
+type DashboardPost = ReturnType<typeof mapPostSummary>;
+
 export default async function DashboardPage() {
     const session = await auth();
     if (!session?.user?.id) {
@@ -26,8 +28,8 @@ export default async function DashboardPage() {
         authenticatedApiRequest<PostDTO[]>("/posts/mine"),
     ]);
 
-    const mappedPosts = posts.map(mapPostSummary);
-    const publishedCount = mappedPosts.filter((post) => post.published).length;
+    const mappedPosts: DashboardPost[] = posts.map(mapPostSummary);
+    const publishedCount = mappedPosts.filter((post: DashboardPost) => post.published).length;
     const draftCount = mappedPosts.length - publishedCount;
 
     return (
