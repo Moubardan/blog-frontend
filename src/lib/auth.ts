@@ -2,7 +2,9 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import type { JWT } from "next-auth/jwt";
 import { getApiBaseUrl } from "@/lib/env";
-import type { AuthTokens, ProfileDTO } from "blog-shared-types";
+import type { AuthTokens, UserDTO } from "blog-shared-types";
+
+type ProfileResponse = UserDTO & { createdAt: string };
 
 const ACCESS_TOKEN_REFRESH_BUFFER_MS = 60 * 1000;
 
@@ -84,7 +86,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         }
 
-        const profile = await fetchJson<ProfileDTO>(
+        const profile = await fetchJson<ProfileResponse>(
           "/auth/profile",
           {
             headers: {

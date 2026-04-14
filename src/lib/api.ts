@@ -6,8 +6,8 @@ import { redirect } from "next/navigation";
 import type {
   ApiErrorResponse,
   PaginatedResponse,
-  ProfileDTO,
   PostDTO,
+  UserDTO,
 } from "blog-shared-types";
 
 type NextFetchInit = RequestInit & {
@@ -121,4 +121,4 @@ export function mapPostDetail(post: PostDTO) {
 }
 
 export type PublicPostsResponse = PaginatedResponse<PostDTO>;
-export type ProfileResponse = ProfileDTO;
+export type ProfileResponse = UserDTO & { createdAt: string };
