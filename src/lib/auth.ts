@@ -2,7 +2,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import type { JWT } from "next-auth/jwt";
 import { getApiBaseUrl } from "@/lib/env";
-import type { AuthTokens, UserDTO } from "blog-shared-types";
+import type { AuthTokens, ProfileDTO } from "blog-shared-types";
 
 const ACCESS_TOKEN_REFRESH_BUFFER_MS = 60 * 1000;
 
@@ -84,7 +84,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         }
 
-        const profile = await fetchJson<UserDTO & { createdAt: string }>(
+        const profile = await fetchJson<ProfileDTO>(
           "/auth/profile",
           {
             headers: {
@@ -110,10 +110,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     async authorized({ auth, request }) {
-      const isOnDashboard = request.nextUrl.pathname.startsWith("/dashboard");
-      if (isOnDashboard) {
+      const isProtectedRoute =
+        request.nextUrl.pathname.startsWith("/dashboard") ||
+        request.nextUrl.pathname.startsWith("/profile");
+
+      if (isProtectedRoute) {
         return !!auth?.user && !!auth?.accessToken && !auth?.error;
       }
+
       return true;
     },
     async jwt({ token, user }) {

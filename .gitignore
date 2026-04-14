@@ -18,6 +18,8 @@ prisma/*.db
 
 # Debug
 npm-debug.log*
+playwright-report/
+test-results/
 
 # Vercel
 .vercel

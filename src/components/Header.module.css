@@ -39,8 +39,25 @@
   transition: color 0.15s;
 }
 
+.profileLink {
+  color: var(--color-text);
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  transition: all 0.15s;
+}
+
 .link:hover {
   color: var(--color-text);
+  text-decoration: none;
+}
+
+.profileLink:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
   text-decoration: none;
 }
 

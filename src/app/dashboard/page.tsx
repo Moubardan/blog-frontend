@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { auth } from "@/lib/auth";
-import { authenticatedApiRequest, mapPostSummary } from "@/lib/api";
+import {
+    authenticatedApiRequest,
+    mapPostSummary,
+    type ProfileResponse,
+} from "@/lib/api";
 import type { PostDTO } from "blog-shared-types";
 import { redirect } from "next/navigation";
 import { DeletePostButton } from "@/components/DeletePostButton";
@@ -17,18 +21,51 @@ export default async function DashboardPage() {
         redirect("/login");
     }
 
-    const posts = (await authenticatedApiRequest<PostDTO[]>("/posts/mine")).map(mapPostSummary);
+    const [profile, posts] = await Promise.all([
+        authenticatedApiRequest<ProfileResponse>("/auth/profile"),
+        authenticatedApiRequest<PostDTO[]>("/posts/mine"),
+    ]);
+
+    const mappedPosts = posts.map(mapPostSummary);
+    const publishedCount = mappedPosts.filter((post) => post.published).length;
+    const draftCount = mappedPosts.length - publishedCount;
 
     return (
         <main className={styles.main}>
             <div className={styles.header}>
-                <h1 className={styles.title}>Mes articles</h1>
-                <Link href="/dashboard/new" className={styles.newBtn}>
-                    + Nouvel article
-                </Link>
+                <div>
+                    <p className={styles.eyebrow}>Espace auteur</p>
+                    <h1 className={styles.title}>Mes articles</h1>
+                </div>
+                <div className={styles.headerActions}>
+                    <Link href="/profile" className={styles.profileLink}>
+                        Voir mon profil
+                    </Link>
+                    <Link href="/dashboard/new" className={styles.newBtn}>
+                        + Nouvel article
+                    </Link>
+                </div>
             </div>
 
-            {posts.length === 0 ? (
+            <section className={styles.summaryGrid}>
+                <article className={styles.summaryCard}>
+                    <span className={styles.summaryLabel}>Auteur</span>
+                    <strong className={styles.summaryValue}>{profile.name}</strong>
+                    <p className={styles.summaryMeta}>{profile.email}</p>
+                </article>
+                <article className={styles.summaryCard}>
+                    <span className={styles.summaryLabel}>Articles publiés</span>
+                    <strong className={styles.summaryValue}>{publishedCount}</strong>
+                    <p className={styles.summaryMeta}>Visibles sur la partie publique</p>
+                </article>
+                <article className={styles.summaryCard}>
+                    <span className={styles.summaryLabel}>Brouillons</span>
+                    <strong className={styles.summaryValue}>{draftCount}</strong>
+                    <p className={styles.summaryMeta}>Encore modifiables avant publication</p>
+                </article>
+            </section>
+
+            {mappedPosts.length === 0 ? (
                 <p className={styles.empty}>
                     Vous n&apos;avez pas encore d&apos;articles.{" "}
                     <Link href="/dashboard/new">Créer votre premier article</Link>
@@ -44,7 +81,7 @@ export default async function DashboardPage() {
                         </tr>
                     </thead>
                     <tbody>
-                        {posts.map((post) => (
+                        {mappedPosts.map((post) => (
                             <tr key={post.id}>
                                 <td>
                                     <Link href={`/articles/${post.slug}`}>{post.title}</Link>

@@ -4,6 +4,7 @@ import styles from "./Header.module.css";
 
 export async function Header() {
     const session = await auth();
+    const userName = session?.user?.name?.trim() || "Mon profil";
 
     return (
         <header className={styles.header}>
@@ -22,6 +23,11 @@ export async function Header() {
                             <li>
                                 <Link href="/dashboard" className={styles.link}>
                                     Dashboard
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href="/profile" className={styles.profileLink}>
+                                    {userName}
                                 </Link>
                             </li>
                             <li>
